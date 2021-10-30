@@ -121,14 +121,6 @@ new_names <- c(
 
 colnames(raw_data) <- new_names
 
-# Drop all that conains ID
-
-colnames(raw_data)
-
-raw_data <- raw_data %>% 
-  select(!contains("id"))
-
-
 # Now make some features numeric as they should be
 raw_data <- raw_data %>% 
   mutate(
@@ -172,11 +164,6 @@ raw_data <- raw_data %>%
 # This one might be useful
 unique(raw_data$departament_code)
 
-# This one its probably too granular, so we delete it
-unique(raw_data$municipal_code)
-raw_data <- raw_data %>% 
-  select(-municipal_code)
-
 
 # Now onto the decoding stuff. Let's start with the severity
 severity_dict <- c(
@@ -217,7 +204,7 @@ intersection_dict <- c(
   "6" = "Roundabout",
   "7" = "Place",
   "8" = "Level crossing",
-  "9" = "Other intersection", 
+  "9" = "Other intersection" 
   
 )
 
@@ -259,14 +246,284 @@ road_category_dict <- c(
   "9" = "other"
 )
 
+traffic_regime_dict <- c(
+  
+ "-1" =  NA,
+  "1" = "One way",
+  "2" = "Bidirectional",
+  "3" = "A separate carriageway",
+  "4" = "With variable assignment channels"
+  
+)
+
+reserved_lane_dict <- c(
+
+  "-1" = NA,
+  "0" = "Not applicable",
+  "1" = "Cycle path",
+  "2" = "Cycle lane",
+  "3" = "Reserved lane"  
+  
+)
+
+profile_dict <- c(
+  
+  "-1" =NA,
+  "1" = "Flat",
+  "2" = "Slope",
+  "3" = "hilltop",
+  "4" = "Bottom of coast"
+  
+)
+
+layout_dict <- c(
+  
+  "-1" = NA,
+  "1" = "rectilinear part",
+  "2" = "In a curve to the left",
+  "3" = "In a curve to the right",
+  "4" = "In S"
+  
+)
+
+
+surface_dict <- c(
+  
+  "-1" = NA,
+  "1" = "Normal",
+  "2" = "Wet",
+  "3" = "Puddles",
+  "4" = "Flooded",
+  "5" = "Snowy",
+  "6" = "Mud",
+  "7" = "Icy",
+  "8" = "Fat. oil",
+  "9" = "Other"
+  
+)
+
+infrastructure_dict <- c(
+  
+  "-1" = NA,
+  "0" = "None",
+  "1" = "Underground. tunnel",
+  "2" = "Bridge. flyover",
+  "3" = "Exchanger or connection sling",
+  "4" = "Railroad",
+  "5" = "Crossroads",
+  "6" = "Pedestrian zone",
+  "7" = "Toll zone",
+  "8" = "Site",
+  "9" = "Others"
+  
+)
+
+situation_dict <- c(
+  
+  "-1" = NA,
+  "0" = "None",
+  "1" = "On the road",
+  "2" = "On emergency lane",
+  "3" = "On the shoulder",
+  "4" = "On the sidewalk",
+  "5" = "On a cycle path",
+  "6" = "On other special track",
+  "8" = "Others"
+  
+)
+
+# Carefull with this one if we decide to one hot it
+vehicle_category_dict <- c(
+  
+  "00" = "NA,",
+  "01" = "Bicycle",
+  "02" = "Moped &lt;50cm3",
+  "03" = "Cart (Quadricycle with bodywork motor) (formerly cart or motor tricycle)",
+  "04" = "Reference not used since 2006 (registered scooter)",
+  "05" = "Reference unused since 2006 (motorcycle)",
+  "06" = "Reference unused since 2006 (sidecar)",
+  "07" = "VL only",
+  "08" = "Reference unused since 2006 (VL + caravan)",
+  "09" = "Reference not used since 2006 (light vehicles + trailer)",
+  "10" = "VU only 1.5T &lt;= PTAC &lt;= 3.5T with or without trailer (formerly VU only 1.5T &lt;= PTAC &lt;= 3.5T)",
+  "11" = "Reference not used since 2006 (VU (10) + caravan)",
+  "12" = "Reference not used since 2006 (VU (10) + trailer)",
+  "13" = "PL only 3.5T <PTCA <= 7,5T ",
+  "14" = "PL only > 7.5T",
+  "15" = "PL> 3,5T + trailer",
+  "16" = "Road tractor only",
+  "17" = "Road tractor + semi-trailer",
+  "18" = "Reference not used since 2006 (public transport)",
+  "19" = "Reference not used since 2006 (tram)",
+  "20" = "Special gear",
+  "21" = "Farm tractor",
+  "30" = "Scooter <50 cm3",
+  "31" = "Motorcycle> 50 cm3 and <= 125 cm3",
+  "32" = "Scooter> 50 cm3 and <= 125 cm3",
+  "33" = "Motorcycle> 125 cm3",
+  "34" = "Scooter> 125 cm3",
+  "35" = "Light quad <= 50 cm3 (Quadricycle without bodywork engine)",
+  "36" = "Heavy quad> 50 cm3 (Quadricycle without bodywork engine)",
+  "37" = "Bus",
+  "38" = "Coach",
+  "39" = "Train",
+  "40" = "Tram",
+  "41" = "3WD <= 50 cm3",
+  "42" = "3WD> 50 cm3 <= 125 cm3",
+  "43" = "3WD> 125 cm3",
+  "50" = "EDP with motor",
+  "60" = "EDP without motor",
+  "80" = "VAE",
+  "99" = "Other vehicle "
+  
+)
+
+
+fixed_obstacle_struck_dict <- c(
+  
+  "-1" = NA,
+  "0" = "Not applicable",
+  "1" = "Parked vehicle",
+  "2" = "Tree",
+  "3" = "Metal slide",
+  "4" = "Concrete slide",
+  "5" = "Other slide",
+  "6" = "Building, wall, bridge pier",
+  "7" = "Vertical signage support or emergency call station",
+  "8" = "Post",
+  "9" = "Street furniture",
+  "10" = "Parapet",
+  "11" = "Island, refuge, upper terminal",
+  "12" = "Sidewalk edge",
+  "13" = "Ditch, embankment, rock face",
+  "14" = "Other fixed obstacle on the road",
+  "15" = "Other fixed obstacle on sidewalk or shoulder",
+  "16" = "Clearance of the roadway without obstacle",
+  "17" = "Nozzle. aqueduct head"
+  
+)
+
+movable_obstacle_dict <- list(
+  
+  "-1" = NA,
+  "0" = "None",
+  "1" = "Pedestrian",
+  "2" = "Vehicle",
+  "4" = "Rail vehicle",
+  "5" = "Domestic animal",
+  "6" = "Wild animal",
+  "9" = "Other "
+)
+
+reason_travel_dict <- c(
+  
+  "-1" = NA,
+  "0" = "Not specified",
+  "1" = "Home. work",
+  "2" = "Home. school",
+  "3" = "Shopping. shopping",
+  "4" = "Professional use",
+  "5" = "Walk. leisure",
+  "9" = "Other"
+
+  )
+
+safety_dict <- c(
+  
+  "-1" = NA,
+  "0" = "No equipment",
+  "1" = "Belt",
+  "2" = "Helmet",
+  "3" = "Children's device",
+	"4" = "reflective vest",
+	"5" = "Airbag (2WD / 3WD)",
+	"6" = "Gloves (2WD / 3WD)",
+	"7" = "Gloves + Airbag (2WD / 3WD)",
+	"8" = "Not determinable",
+	"9" = "Other"
+  
+)
+
+
+user_category_dict <- c(
+  
+  "1" = "Driver",
+  "2" = "Passenger",
+  "3" = "Pedestrian" 
+  
+)
+
+
+# Columns to delete
+
+raw_data <- raw_data %>% 
+  select(
+    !contains("id"),
+    -c(
+      municipal_code,
+      postal_adress,
+      route_number, 
+      index_route_number, 
+      alphanum_index_route_number,
+      upstream_terminal,
+      distances_to_UT,
+      flow_direction,
+      engine_type,
+      occupants_public_transport,
+      pedestrian_location,
+      pedestrian_action,
+      alone_pedestrian,
+      saefty_use_2,
+      saefty_use_3,
+      initial_shock_point,
+      place_in_vehicle,
+      reserved_lane,
+      infrastructure)
+    )
+
 
 # Decode it
 raw_data <- raw_data %>% 
-  mutate(severity = severity_dict[severity],
-         sex = sex_dict[sex]
-         
-         ) 
+  mutate(
+    
+    severity = severity_dict[severity],
+    sex = sex_dict[sex],
+    light_conditions = light_cond_dict[light_conditions],
+    location = location_dict[location],
+    intersection = intersection_dict[intersection],
+    #atmospheric_conditions = atm_dict[atmospheric_conditions],
+    #collision_type = collision_dict[collision_type],
+    road_category = road_category_dict[road_category],
+    traffic_regime = traffic_regime_dict[traffic_regime],
 
+    road_profile = profile_dict[road_profile],
+    layout = layout_dict[layout],
+    surface_condition = surface_dict[surface_condition],
+    user_category = user_category_dict[user_category],
+    #saefty_use_1 = safety_dict[saefty_use_1],
+    #fixed_obstacle_struck = fixed_obstacle_struck_dict[fixed_obstacle_struck],
+    #movable_obstacle_struck = movable_obstacle_dict[movable_obstacle_struck]
+    
+    )
+
+
+# Apparently R is not happy about us using the -1 key inside vectors :/
+raw_data %>% 
+  is.na() %>% 
+  colSums() / nrow(raw_data) * 100
+
+# Drop columns with over 80% NA
+raw_data <- raw_data %>% 
+  select(
+    -c(
+      road_profile,
+      layout,
+      surface_condition
+    ))
+
+
+# Save it
+write.csv(raw_data, "data/raw/decoded_data.csv", row.names = FALSE)
 
 
 # EDA -------------------------------------------------------------------------
